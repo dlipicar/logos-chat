@@ -18,7 +18,7 @@ pub use group_v1::GroupV1Convo;
 pub use group_v2::{GroupV2Convo, GroupV2Frame, GroupV2Payload};
 #[cfg(any(test, feature = "test-support"))]
 pub use group_v3::inspect as group_v3_wire;
-pub use group_v3::{GroupV3Convo, SyncState};
+pub use group_v3::{GroupV3Convo, MemberState, MemberSync, SyncState};
 
 pub type ConversationId = String;
 pub type ConversationIdRef<'a> = &'a str;
@@ -147,6 +147,12 @@ pub(crate) trait GroupConvo<S: ExternalServices>: Convo<S> + std::fmt::Debug + S
     /// Only GroupV3 detects forks.
     fn sync_state(&self) -> SyncState {
         SyncState::Unknown
+    }
+
+    /// Each member's state against ours, our own as synced. Only GroupV3 hears its members'
+    /// epochs.
+    fn member_states(&self) -> Vec<MemberState> {
+        Vec::new()
     }
 }
 

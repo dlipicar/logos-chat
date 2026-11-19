@@ -1,7 +1,7 @@
 use crate::causal_history::{CausalHistoryStore, DeliveryAck, MissingMessage};
 use crate::conversation::{
     ConversationIdRef, DirectV1Convo, GroupV1Convo, GroupV2Convo, GroupV3Convo, Identified,
-    MessageId, SyncState,
+    MemberState, MessageId, SyncState,
 };
 use crate::identity::{AuthenticatedSigner, ParticipantId, Signer, SignerKey, SignerRef};
 use crate::service_context::{ExternalServices, ServiceContext};
@@ -396,6 +396,21 @@ impl<'a, S: ExternalServices + 'static> Core<S> {
             .get(convo_id)
             .map(Debuggable::debug_data)
             .ok_or_else(|| ChatError::NoConvo(convo_id.into()))
+    }
+
+    /// Each member's group state against this member's, one per signer, this member's own as
+    /// synced at its epoch. Empty for a conversation kind that does not track them, a direct one
+    /// included.
+    pub fn group_member_states(&self, convo_id: &str) -> Result<Vec<MemberState>, ChatError> {
+        let convo = self
+            .cached_convos
+            .get(convo_id)
+            .ok_or_else(|| ChatError::NoConvo(convo_id.to_string()))?;
+
+        Ok(match convo {
+            ConvoTypeOwned::Group(group_convo) => group_convo.member_states(),
+            ConvoTypeOwned::Direct(_) => Vec::new(),
+        })
     }
 
     /// Invites sent here whose commit has not landed. A direct conversation has
